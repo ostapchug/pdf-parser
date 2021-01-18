@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,30 +43,86 @@ public class SaveWorker extends SwingWorker<Void, Void> {
 	    Cell cell = row.createCell(cellCount);
 	    cell.setCellValue(entry);
 	}
+	
+	private int findIndex (String r, String s) {
+		int position = 0;
+		Pattern pattern = Pattern.compile(r);
+		Matcher matcher = pattern.matcher(s);
+		if (matcher.find())
+			   position = matcher.start();
 		
+		return position;		
+	}
 
 	private void writeToExcel(String data, String savePath) throws FileNotFoundException, IOException {
 		
 		XSSFWorkbook workbook = new XSSFWorkbook();
 		XSSFSheet sheet = workbook.createSheet();
 		
-		ArrayList<String> cell0 = findData ("P\\d{3}(?=\\r)", data);
-		ArrayList<String> cell1 = new ArrayList<String>(Arrays.asList(data.split("P\\d{3}(?=\\r)")));
+		ArrayList<String> cell2 = findData ("P\\d{3}(?=\\r)", data);
+		List<String> cells = new ArrayList<>(Arrays.asList(data.split("P\\d{3}(?=\\r)")));
+		cells.removeAll(Arrays.asList("",null));
+		
+		ArrayList<String> tmp0 = new ArrayList<>();
+		ArrayList<String> tmp1 = new ArrayList<>();
+
+		ArrayList<String> cell0 = new ArrayList<>();
+		ArrayList<String> cell1 = new ArrayList<>();
+		ArrayList<String> cell3 = new ArrayList<>();
+		ArrayList<String> cell4 = new ArrayList<>();
+		
+		int i=0;
 		
 		int rowCount = 1;
 		Row row = sheet.createRow(rowCount);
 		
-		for (String s : cell0) {
+		for (String s : cells) {
+			cell3.add(s.substring(0, findIndex("[A-Z][a-z]|\\n[A-Z]-",s)-2));
+		}		
+		i=0;
+		for (String s : cells) {
+			tmp0.add(s.replace(cell3.get(i++), ""));
+		}	
+		
+		for (String s : tmp0) {
+			cell0.add(s.substring(0, findIndex("[a-z]\\v|\\d\\v",s)+1));
+		}		
+		i=0;
+		for (String s : tmp0) {
+			tmp1.add(s.replace(cell0.get(i++), ""));
+		}
+		
+		for (String s : tmp1) {
+			cell1.add(s.substring(0, findIndex("\\w\\v|\\)\\v",s)+1));
+		}
+		i=0;
+		for (String s : tmp1) {
+			cell4.add(s.replace(cell1.get(i++), ""));
+		}
+			
+		for (String s : cell2) {
 			row = sheet.createRow(rowCount++);
-			writeData(s, row, 0); 
+			writeData(s, row, 2); 
 		}		
 		
-		if(rowCount<=cell1.size())
+		if(rowCount<=cells.size())
 			row = sheet.createRow(rowCount++);
 		
-		int i=0;
+		i=0;
 		for (Row r : sheet) {
-			writeData(cell1.get(i++), r, 1); 
+			writeData(cell0.get(i++), r, 0);
+		}
+		i=0;
+		for (Row r : sheet) {
+			writeData(cell1.get(i++), r, 1);	
+		}
+		i=0;
+		for (Row r : sheet) {
+			writeData(cell3.get(i++), r, 3);
+		}
+		i=0;
+		for (Row r : sheet) {
+			writeData(cell4.get(i++), r, 4);
 		}
 		
 		try (OutputStream os = new FileOutputStream(savePath)) {
