@@ -44,6 +44,14 @@ public class SaveWorker extends SwingWorker<Void, Void> {
 	    cell.setCellValue(entry);
 	}
 	
+	private void writeColumn(List<String> col, XSSFSheet sh, int n) {
+		int i=0;
+		for (Row r : sh) {
+			writeData(col.get(i++), r, n);
+		}
+		
+	}
+	
 	private int findIndex (String r, String s) {
 		int position = 0;
 		Pattern pattern = Pattern.compile(r);
@@ -52,6 +60,23 @@ public class SaveWorker extends SwingWorker<Void, Void> {
 			   position = matcher.start();
 		
 		return position;		
+	}
+	
+	private ArrayList<String> findColumn(List<String> data, String r, int n){
+		ArrayList<String> res = new ArrayList<>();
+		for (String s : data) {
+			res.add(s.substring(0, findIndex(r,s)+n));
+		}
+		return res;
+	}
+	
+	private ArrayList<String> subtractColumn(List<String> l0, List<String> l1){
+		ArrayList<String> res = new ArrayList<>();
+		int i=0;
+		for (String s : l0) {
+			res.add(s.replace(l1.get(i++), ""));
+		}
+		return res;		
 	}
 
 	private void writeToExcel(String data, String savePath) throws FileNotFoundException, IOException {
@@ -63,67 +88,30 @@ public class SaveWorker extends SwingWorker<Void, Void> {
 		List<String> cells = new ArrayList<>(Arrays.asList(data.split("P\\d{3}(?=\\r)")));
 		cells.removeAll(Arrays.asList("",null));
 		
-		ArrayList<String> tmp0 = new ArrayList<>();
-		ArrayList<String> tmp1 = new ArrayList<>();
-
 		ArrayList<String> cell0 = new ArrayList<>();
 		ArrayList<String> cell1 = new ArrayList<>();
 		ArrayList<String> cell3 = new ArrayList<>();
-		ArrayList<String> cell4 = new ArrayList<>();
-		
-		int i=0;
 		
 		int rowCount = 1;
-		Row row = sheet.createRow(rowCount);
+		sheet.createRow(rowCount);
+
+		cell3=findColumn(cells,"[A-Z][a-z]|\\n[A-Z]-",-2);
+		cells=subtractColumn(cells,cell3);
 		
-		for (String s : cells) {
-			cell3.add(s.substring(0, findIndex("[A-Z][a-z]|\\n[A-Z]-",s)-2));
-		}		
-		i=0;
-		for (String s : cells) {
-			tmp0.add(s.replace(cell3.get(i++), ""));
-		}	
+		cell0=findColumn(cells,"[a-z]\\v|\\d\\v",1);
+		cells=subtractColumn(cells,cell0);
 		
-		for (String s : tmp0) {
-			cell0.add(s.substring(0, findIndex("[a-z]\\v|\\d\\v",s)+1));
-		}		
-		i=0;
-		for (String s : tmp0) {
-			tmp1.add(s.replace(cell0.get(i++), ""));
-		}
+		cell1=findColumn(cells,"\\w\\v|\\)\\v",1);
+		cells=subtractColumn(cells,cell1);
 		
-		for (String s : tmp1) {
-			cell1.add(s.substring(0, findIndex("\\w\\v|\\)\\v",s)+1));
-		}
-		i=0;
-		for (String s : tmp1) {
-			cell4.add(s.replace(cell1.get(i++), ""));
-		}
-			
-		for (String s : cell2) {
-			row = sheet.createRow(rowCount++);
-			writeData(s, row, 2); 
-		}		
+		while(rowCount<=cells.size())
+			sheet.createRow(rowCount++);
 		
-		if(rowCount<=cells.size())
-			row = sheet.createRow(rowCount++);
-		
-		i=0;
-		for (Row r : sheet) {
-			writeData(cell0.get(i++), r, 0);
-		}
-		i=0;
-		for (Row r : sheet) {
-			writeData(cell1.get(i++), r, 1);	
-		}
-		i=0;
-		for (Row r : sheet) {
-			writeData(cell3.get(i++), r, 3);
-		}
-		i=0;
-		for (Row r : sheet) {
-			writeData(cell4.get(i++), r, 4);
-		}
+		writeColumn(cell0, sheet, 0);
+		writeColumn(cell1, sheet, 1);
+		writeColumn(cell2, sheet, 2);
+		writeColumn(cell3, sheet, 3);
+		writeColumn(cells, sheet, 4);
 		
 		try (OutputStream os = new FileOutputStream(savePath)) {
 			workbook.write(os);
@@ -136,5 +124,4 @@ public class SaveWorker extends SwingWorker<Void, Void> {
 		writeToExcel (data, savePath);
 		return null;
 	}
-
 }

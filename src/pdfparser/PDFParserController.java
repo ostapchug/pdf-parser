@@ -123,7 +123,6 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
                 	if(startPage<=endPage)
                 	extractText(openPath, parent.getShapes(), startPage, endPage);
             	}
-
                 break;
             case "Cancel":
                 break;
