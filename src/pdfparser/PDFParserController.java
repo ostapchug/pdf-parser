@@ -4,17 +4,22 @@ package pdfparser;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-class PDFParserController implements ActionListener, ChangeListener, PropertyChangeListener {
+class PDFParserController implements ActionListener, ChangeListener, PropertyChangeListener, ItemListener {
 	
 	private PDFParser parent;
 	private LoadWorker loadWorker;
@@ -42,9 +47,9 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
         }
     }
 	
-	private void saveText(String path, String data){
+	private void saveText(String path, List<List<String>> data){
         if(path!=null){
-        	saveWorker= new SaveWorker(path, data);
+        	saveWorker = new SaveWorker(path, data);
         	saveWorker.addPropertyChangeListener(this);
         	saveWorker.execute();
         }
@@ -79,13 +84,13 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
                 parent.setProgress(false);
                 parent.setStatus(" Done");
                 try{
-                	saveText(openPath.substring(0, openPath.lastIndexOf(File.separator)+1)+"DataEntry.xlsx", extractWorker.get());
+                	parent.setTable(extractWorker.get());
                 }catch(InterruptedException | ExecutionException ex){
                     System.out.println(ex.getMessage());
                 }     
             }
         	
-        }else {
+        }else if (evt.getSource().equals(saveWorker)) {
         	
         	if (!saveWorker.isDone()){
                 parent.setProgress(true);
@@ -112,23 +117,83 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
             case "Open":
                 openPath=parent.getPath();
                 loadPage(openPath,0);
-                parent.setSaveButton(true);
+                parent.setExtractButton(true);
                 break;
-            case "Save":
+            case "Extract":
             	String range = JOptionPane.showInputDialog("Enter page range:", "43-63");
             	if(null!=range) {
             		String [] rangeArr = range.split("-");
                 	int startPage = Integer.parseInt(rangeArr[0]);
                 	int endPage = Integer.parseInt(rangeArr[1]);
-                	if(startPage<=endPage)
-                	extractText(openPath, parent.getShapes(), startPage, endPage);
+                	if((endPage-startPage)>=0) {
+                		extractText(openPath, parent.getShapes(), startPage, endPage);
+                        parent.setSaveButton(true);
+                        parent.setEditCheckBox(true);
+                	}	
             	}
                 break;
-            case "Cancel":
+            case "Save":
+            	saveText(openPath.substring(0, openPath.lastIndexOf(File.separator)+1)+"DataEntry.xlsx", parent.getTableData());
                 break;
             default:
                 break;
         }
+	}
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+		if(e.getStateChange() == ItemEvent.SELECTED) {
+            parent.setRegexLabel(true);
+            parent.setRegexField(true);
+            parent.setAddRegexButton(true);
+        } else {
+            parent.setRegexLabel(false);
+            parent.setRegexField(false);
+        	parent.setAddRegexButton(false);
+        }
+	}
+	
+	private List<List<String>> editText(String regex){
+		List<List<String>> text = new ArrayList<>();
+		
+		return text;
+	}
+	
+	private ArrayList<String> findData(String regex, String text) {
+		ArrayList<String> data = new ArrayList <> ();
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(text);
+		while (matcher.find()) {
+			data.add(matcher.group(0));
+		}	
+		return data;
+	}
+	
+	private int findIndex (String regex, String text) {
+		int position = 0;
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(text);
+		if (matcher.find())
+			   position = matcher.start();
+		
+		return position;		
+	}
+	
+	private ArrayList<String> findColumn(List<String> data, String regex, int n){
+		ArrayList<String> res = new ArrayList<>();
+		for (String s : data) {
+			res.add(s.substring(0, findIndex(regex,s)+n));
+		}
+		return res;
+	}
+	
+	private ArrayList<String> subtractColumn(List<String> l0, List<String> l1){
+		ArrayList<String> res = new ArrayList<>();
+		int i=0;
+		for (String s : l0) {
+			res.add(s.replace(l1.get(i++), ""));
+		}
+		return res;		
 	}
 
 }

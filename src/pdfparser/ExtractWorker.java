@@ -12,12 +12,12 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
 
-class ExtractWorker extends SwingWorker<String, Void> { 
+class ExtractWorker extends SwingWorker<ArrayList<String>, Void> { 
 	
 	private String openPath;
     private int startPage, endPage;
     private ArrayList<Shape> sRegions;
-    private StringBuffer text = new StringBuffer();
+    private ArrayList<String> text = new ArrayList <>();
     
     ExtractWorker(String openPath, ArrayList<Shape> sRegions, int startPage, int endPage){
         this.openPath=openPath;
@@ -26,7 +26,7 @@ class ExtractWorker extends SwingWorker<String, Void> {
         this.endPage=endPage;
     }
     
-    private String extractText(String openPath, ArrayList<Shape> sRegions, int startPage, int endPage) throws IOException{
+    private ArrayList<String> extractText(String openPath, ArrayList<Shape> sRegions, int startPage, int endPage) throws IOException{
     	//Loading an existing document
         File file = new File(openPath);
         PDDocument document = PDDocument.load(file);
@@ -45,18 +45,18 @@ class ExtractWorker extends SwingWorker<String, Void> {
             
             //Retrieving text from PDF document
             for (Shape s : sRegions) {
-                text.append(pdfStripper.getTextForRegion("region"+s.hashCode()));
+                text.add(pdfStripper.getTextForRegion("region"+s.hashCode()));
             }
         }
         
         //Closing the document
         document.close();
         
-        return text.toString();
+        return text;
     }
 
 	@Override
-	protected String doInBackground() throws Exception {
+	protected ArrayList<String> doInBackground() throws Exception {
 		return extractText(openPath, sRegions, startPage, endPage);
 	}
     
