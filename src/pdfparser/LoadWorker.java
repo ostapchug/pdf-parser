@@ -16,29 +16,29 @@ class LoadWorker extends SwingWorker<ImageIcon, Void> {
     private int pageNumber;
     
     LoadWorker(String openPath, int pageNumber){
-        this.openPath=openPath;
-        this.pageNumber=pageNumber;
+        this.openPath = openPath;
+        this.pageNumber = pageNumber;
     }
     
-    private ImageIcon loadPDF(String path, int pageNumber) throws IOException{
+    private ImageIcon createPdfImage(String path, int pageNumber) throws IOException{
+    	ImageIcon pdfImage = null;
+    	
     	//Loading an existing document
         File file = new File(path);
-        PDDocument document = PDDocument.load(file);
         
-        PDFRenderer renderer = new PDFRenderer(document);
-        BufferedImage image = renderer.renderImage(pageNumber, 1);
-        ImageIcon imageIcon = new ImageIcon(image);
-        imageIcon.setDescription(String.valueOf(document.getNumberOfPages()));
+        try (PDDocument document = PDDocument.load(file)){
+            PDFRenderer renderer = new PDFRenderer(document);
+            BufferedImage image = renderer.renderImage(pageNumber, 1);
+            pdfImage = new ImageIcon(image);
+            pdfImage.setDescription(String.valueOf(document.getNumberOfPages()));
+        }
         
-        //Closing the document
-        document.close();
-        
-        return imageIcon;
+        return pdfImage;
     }
 
 	@Override
 	protected ImageIcon doInBackground() throws Exception {
-		return loadPDF(openPath, pageNumber);
+		return createPdfImage (openPath, pageNumber);
 	}
 
 }

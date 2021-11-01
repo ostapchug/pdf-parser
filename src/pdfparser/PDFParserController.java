@@ -9,12 +9,8 @@ import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import javax.swing.JOptionPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -32,23 +28,23 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
 	}
 	
 	private void loadPage(String path, int page){
-        if(path!=null){
-            loadWorker= new LoadWorker(path, page);
+        if(path != null){
+            loadWorker = new LoadWorker(path, page);
             loadWorker.addPropertyChangeListener(this);
             loadWorker.execute();
         }
     }
 	
-	private void extractText(String path, ArrayList<Shape> sRegions, int startPage, int endPage){
-        if(path!=null){
-        	extractWorker= new ExtractWorker(path, sRegions, startPage, endPage);
+	private void extractText(String path, List<Shape> selectedRegions, int startPage, int endPage){
+        if(path != null){
+        	extractWorker = new ExtractWorker(path, selectedRegions, startPage, endPage);
         	extractWorker.addPropertyChangeListener(this);
         	extractWorker.execute();
         }
     }
 	
 	private void saveText(String path, List<List<String>> data){
-        if(path!=null){
+        if(path != null){
         	saveWorker = new SaveWorker(path, data);
         	saveWorker.addPropertyChangeListener(this);
         	saveWorker.execute();
@@ -153,6 +149,8 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
         }
 	}
 	
+/*	For the future realization
+ 
 	private List<List<String>> editText(String regex){
 		List<List<String>> text = new ArrayList<>();
 		
@@ -195,5 +193,6 @@ class PDFParserController implements ActionListener, ChangeListener, PropertyCha
 		}
 		return res;		
 	}
+*/
 
 }
